@@ -1,83 +1,42 @@
 import math
 import numpy as np
 import numpy.random as rand
-import numpy.linalg as linalg
 
 from tkinter import Tk, Frame, Canvas
 
-########### BEGIN CODE THAT NEEDS TO BE CHANGED ###############
-
-#Priority Data Structure that you are to replace with more efficient implementation
 class ArrayPQ:
-    #-__init_ initializes the priority data structure
-    #-This function expects only the number of balls as an input
-    #-The return statement doesn't return anything and marks the end of the function
     def __init__(self, num_balls):
-        self.num_balls = num_balls
-        self.horizontal_wall_collision_times = np.zeros(num_balls)
-        self.vertical_wall_collision_times = np.zeros(num_balls)
-        self.ball_collision_times = np.zeros((num_balls, num_balls))
-        self.num_collisions = np.zeros(num_balls)
-        return
-        
-    #-insert will insert a collision occurring at "value" which is a time stamp parameter
-    #insert first takes in parameters i and j, these will indicate which array
-    #value will be inserted; as well as which element needs to be modified.
-    #-Lastly the number of collision that a particular ball (either i or j or both)
-    #will also be inputted into the priority queue.
-    #-Nothing is returned
-    def insert(self, i, j, value, num_collisions_i, num_collisions_j):
-        if i == -1:
-            self.vertical_wall_collision_times[j] = value
-            self.num_collisions[j] = num_collisions_j
-        elif j == -1:
-            self.horizontal_wall_collision_times[i] = value
-            self.num_collisions[i] = num_collisions_i
-        else:
-            self.ball_collision_times[i][j] = value
-            self.num_collisions[j] = num_collisions_j
-            self.num_collisions[i] = num_collisions_i
+        self.PQ = []
+        return 
      
-    #delete acts a blank pop, meaning it will remove the next minimum value
-    #however it does not return any value as it is to be used to only
-    #remove elements. Be sure to call get_next before calling delete if
-    #you wish to receive the information for the next minimum value
-     
-    # delete will need to be implemented properly in order to create a heap implementation
-    def delete(self):
-        return
-    #-get_next will return the next occurring collision across all possible 
-    #collisions, in other words it finds the minimum time across the
-    #next collision in horizontal_wall_collision_times, vertical_wall_collision_times,
-    #and ball_collision_times
-    #-The two ball indices will be returned along with the minimum collision time and the 
-    #count of collisions between the two balls.
-    #-If either tix or tiy is less than tij or less than each other, then the corresponding collision
-    #time within either of the wall collisions arrays will be returned.
-    #get_next acts as the function peek for as it only looks at the next minimum value
-    def get_next(self):
-        min_i = -1
-        min_j = -1
-        tij = float('inf')
-        for i in np.arange(self.num_balls):
-            for j in np.arange(i, self.num_balls):
-                if self.ball_collision_times[i][j] < tij:
-                    tij = self.ball_collision_times[i][j]
-                    min_i = i
-                    min_j = j
-        tix = np.min(self.horizontal_wall_collision_times)
-        tiy = np.min(self.vertical_wall_collision_times)
-        if tix <= tij and tix <= tiy:
-            return np.argmin(self.horizontal_wall_collision_times), -1, np.min(self.horizontal_wall_collision_times), self.num_collisions[np.argmin(self.horizontal_wall_collision_times)], -1
-        elif tiy < tij and tiy < tix:
-            min_i = -1
-            min_j = np.argmin(self.vertical_wall_collision_times)
-            return -1, np.argmin(self.vertical_wall_collision_times), np.min(self.vertical_wall_collision_times), -1, self.num_collisions[np.argmin(self.vertical_wall_collision_times)]
-        else:
-            return min_i, min_j, tij, self.num_collisions[min_i], self.num_collisions[min_j]
-    
+    def MinHeapify(self, i): 
+        l = 2*(i + 1) - 1
+        r = 2*(i + 1)
+        smallest = i
+        if l < len(self.PQ) and self.PQ[l][2] < self.PQ[i][2]: 
+            smallest = l
+        if r < len(self.PQ) and self.PQ[r][2] < self.PQ[smallest][2]:
+            smallest = r
+        if smallest != i:
+            self.PQ[i], self.PQ[smallest] = self.PQ[smallest], self.PQ[i]
+            self.MinHeapify(smallest)
+            
+    def BuildMinHeap(self): 
+        for i in range(math.floor(len(self.PQ)/2), -1, -1):
+            self.MinHeapify(i)
 
-########### END CODE THAT NEEDS TO BE CHANGED ###############
+    def insert(self, i, j, value, num_collisions_i, num_collisions_j):
+        x = (i, j, value, num_collisions_i, num_collisions_j)
+        self.PQ.append(x)
+        self.BuildMinHeap()
+        
+    def delete(self):
+        self.PQ = self.PQ[1:]
+        self.BuildMinHeap()
+        return
+    
+    def get_next(self):
+        return self.PQ[0][0], self.PQ[0][1], self.PQ[0][2], self.PQ[0][3], self.PQ[0][4]
 
 #Painter Class is defined in order to work with the tkinter module producing the graphic window
 class Painter:
@@ -442,7 +401,7 @@ class Ball:
 if __name__ == "__main__":
     
     #Set the parameters for the graphics window and simulation
-    scale = 800
+    scale = 500
     border = 5
     #Set radius range for all balls
     max_radius = 20
@@ -450,7 +409,7 @@ if __name__ == "__main__":
     #set number of balls
     num_balls = 10
     #set refresh rate
-    refresh_speed = 5
+    refresh_speed = 30
     #seed used to ensure consistent random values returned from using rand.random
     rand.seed(12394)
     #create the graphics object
